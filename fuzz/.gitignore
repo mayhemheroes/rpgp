@@ -2,8 +2,3 @@ target
 corpus
 artifacts
 coverage
-
-# log files
-fuzz-*.log
-
-Cargo.lock
