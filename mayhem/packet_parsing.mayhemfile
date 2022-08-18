@@ -1,0 +1,7 @@
+project: rpgp
+target: packet-parsing
+
+cmds:
+  - cmd: /packet_parsing
+  - cmd: /packet_parsing_no_inst @@
+    libfuzzer: false
