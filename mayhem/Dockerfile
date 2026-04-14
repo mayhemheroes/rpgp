@@ -1,22 +1,19 @@
 # Build Stage
-FROM ghcr.io/evanrichter/cargo-fuzz:latest as builder
+FROM --platform=linux/amd64 rustlang/rust:nightly AS builder
 
-## Add source code to the build stage.
+RUN cargo install cargo-fuzz
+
 ADD . /src
 WORKDIR /src
 
-RUN echo building instrumented harnesses && \
-    bash -c "pushd fuzz && cargo +nightly -Z sparse-registry fuzz build && popd" && \
-    mv fuzz/target/x86_64-unknown-linux-gnu/release/packet_parsing /packet_parsing && \
-    echo done
+RUN cargo +nightly fuzz build && \
+    mv fuzz/target/x86_64-unknown-linux-gnu/release/packet_parsing /packet_parsing
 
-RUN echo building non-instrumented harnesses && \
-    export RUSTFLAGS="--cfg fuzzing -Clink-dead-code -Cdebug-assertions -C codegen-units=1" && \
-    bash -c "pushd fuzz && cargo +nightly -Z sparse-registry build --release && popd" && \
-    mv fuzz/target/release/packet_parsing /packet_parsing_no_inst && \
-    echo done
+RUN RUSTFLAGS="--cfg fuzzing -Clink-dead-code -Cdebug-assertions -C codegen-units=1" \
+    cargo +nightly build --release --manifest-path fuzz/Cargo.toml && \
+    mv fuzz/target/release/packet_parsing /packet_parsing_no_inst
 
 # Package Stage
-FROM rustlang/rust:nightly
+FROM ubuntu:22.04
 
 COPY --from=builder /packet_parsing /packet_parsing_no_inst /
